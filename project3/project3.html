@@ -1,0 +1,122 @@
+
+<html>
+  <!-- Vertex Shader -->
+  <script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec4 vPosition;
+    attribute vec4 vColor;
+    attribute vec4 vNormal;
+    varying vec4 color;
+    
+    uniform mat4 ctm;   // Object Current Tranformation Matrix
+    uniform mat4 model_view;    // Model view matrix (look_at())
+    uniform mat4 projection;    // Project Matrix (ortho() for now)
+    uniform vec4 ambient_product, diffuse_product, specular_product;
+    vec4 ambient, diffuse, specular;
+    uniform float shininess, attenuation_constant, attenuation_linear, attenuation_quadratic;
+    uniform vec4 light_position; 
+    
+    varying vec4 N;
+    varying vec4 L;
+    varying vec4 V;
+    varying float distance;
+    
+    // toRHR (to right-hand rule)
+    // DO NOT MODIFY THE toRHR VARIABLE
+    mat4 toRHR = mat4(vec4(1,0,0,0),
+                          vec4(0,1,0,0),
+                          vec4(0,0,-1,0),
+                          vec4(0,0,0,1));
+    
+    void main()
+    {
+    
+        vec4 position = projection * model_view * ctm * vPosition;
+        N = normalize(model_view * ctm * vNormal);
+        vec4 L_temp = model_view * (light_position - ctm * vPosition);
+        L = normalize(L_temp);
+        vec4 eye_point = vec4(0.0, 0.0, 0.0, 1.0);
+        V = normalize(eye_point - (model_view * ctm * vPosition));
+        distance = length(L_temp);
+        color = vColor;
+        
+        // DO NOT MODIFY THE NEXT LINE
+        gl_Position = toRHR * position;
+    }
+  </script>
+
+  <!-- Fragment Shader -->
+  <script id="fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+    
+    varying vec4 color;
+    varying vec4 N;
+    varying vec4 L;
+    varying vec4 V;
+    varying float distance;
+    
+    uniform float shininess;
+    uniform float attenuation_constant, attenuation_linear, attenuation_quadratic;
+    uniform float attenuation;
+    
+    vec4 ambient, diffuse, specular;
+    
+    void main()
+    {
+      vec4 NN = normalize(N);
+      vec4 VV = normalize(V);
+      vec4 LL = normalize(L);
+      ambient = color * 0.3;
+      vec4 H = normalize(LL + VV);
+      diffuse = color * max(dot(LL, NN), 0.0) * 0.7;
+      specular = pow(max(dot(NN, H), 0.0), shininess) * vec4(1.0, 1.0, 1.0, 1.0);
+      float attenuation = 1.0 / (attenuation_constant + (attenuation_linear * distance) + (attenuation_quadratic * distance * distance));
+      
+      vec4 tempColor = ambient + attenuation * (diffuse + specular);
+      gl_FragColor = vec4(min(tempColor.x, 1.0), min(tempColor.y, 1.0), min(tempColor.z, 1.0), 1.0);
+      // gl_FragColor = ambient + attenuation * (diffuse + specular);
+                          
+    }
+  </script>
+
+  <!-- Load user-defined libraries and programs -->
+  <script type="text/javascript" src="initShaders.js"></script>
+  <!-- Add more libraries here -->
+  <script src="linearAlg.js"></script>
+  <script src="labs.js"></script>
+  <script src="viewing.js"></script>
+  <script src="ctms.js"></script>
+  <!-- <script src="keyPress.js"></script>  -->
+  <!-- The main program -->
+  <script type="text/javascript" src="project3.js"></script>
+
+  <!-- HTML -->
+  <head>
+    <title>project3</title>
+  </head>
+  
+  <body onload="main();">
+    <div style="display: flex">
+    <div><canvas id="gl-canvas" width="762" height="762"></canvas></div>
+  <div>
+    <h1>Project 3</h1>
+    <!-- Below is a static part of the HTML which can be used for instruction
+         and/or explanation -->
+    <p>
+        Press:
+        <h5>left arrow to rotate eye to the left</h5>
+        <h5>right arrow to rotate eye to the right</h5>
+        <h5>up arrow to rotate eye upwards</h5>
+        <h5>down arrow to rotate eye downwards</h5>
+        <h5>scroll wheel up/down to zoom in and out</h5>
+
+        <h5>'spacebar' to pause animation</h5>
+        <h5>'i' to move light up</h5>
+        <h5>'k' to move light down</h5>
+        <h5>'l' to move light right</h5>
+        <h5>'j' to move light left</h5>
+        
+    </p>
+  </div>
+  </div>
+  </body>
+</html>
